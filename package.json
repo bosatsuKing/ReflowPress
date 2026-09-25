@@ -1,0 +1,30 @@
+{
+  "name": "reflowpress",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first publication to PDF tooling",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "lint": "eslint . && prettier --check .",
+    "typecheck": "tsc --noEmit --project tsconfig.typecheck.json --pretty false",
+    "test": "vitest run",
+    "build": "tsc -b",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^22.15.0",
+    "eslint": "^10.0.0",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "typescript": "^6.0.0",
+    "typescript-eslint": "^8.57.1",
+    "vite": "^7.0.0",
+    "vitest": "^5.0.0"
+  }
+}

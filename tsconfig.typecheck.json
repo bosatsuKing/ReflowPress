@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "sourceMap": false,
+    "noEmit": true,
+    "types": ["node", "vitest/globals"],
+    "paths": {
+      "@reflowpress/core": ["./packages/core/src/index.ts"],
+      "@reflowpress/epub": ["./packages/epub/src/index.ts"],
+      "@reflowpress/renderer": ["./packages/renderer/src/index.ts"],
+      "@reflowpress/pdf": ["./packages/pdf/src/index.ts"],
+      "@reflowpress/validation": ["./packages/validation/src/index.ts"]
+    }
+  },
+  "include": [
+    "packages/**/*.ts",
+    "tests/unit/**/*.ts",
+    "vitest.config.ts",
+    "playwright.config.ts"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@reflowpress/pdf",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "dependencies": {
+    "@reflowpress/core": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  }
+}
