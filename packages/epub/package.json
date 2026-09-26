@@ -7,9 +7,14 @@
     ".": "./dist/index.js"
   },
   "dependencies": {
-    "@reflowpress/core": "workspace:*"
+    "@reflowpress/core": "workspace:*",
+    "@xmldom/xmldom": "^0.9.12",
+    "yauzl": "^3.4.0"
   },
   "scripts": {
     "build": "tsc -b"
+  },
+  "devDependencies": {
+    "@types/yauzl": "^3.4.0"
   }
 }

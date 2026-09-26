@@ -1,4 +1,14 @@
 import type { PublicationAdapter, PublicationSource } from "@reflowpress/core";
+export {
+  EpubInspectionError,
+  inspectEpub,
+  type EpubInspection,
+  type EpubInspectionErrorCode,
+  type EpubInspectionLimits,
+  type EpubManifestItem,
+  type EpubMetadata,
+  type EpubSpineItem,
+} from "./inspect.js";
 
 export interface EpubSource extends PublicationSource {
   readonly mediaType: "application/epub+zip";
