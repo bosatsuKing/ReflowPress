@@ -34,11 +34,42 @@ part of the foundation phase.
 
 - Stabilize the bootstrap and make the architecture, development loop, planned
   conversion pipeline, PDF quality gate, and test feedback loop visible in
-  repository documentation.
+  repository documentation. This phase is complete.
 - Keep diagrams aligned with declared package dependencies and label future
   implementations as planned.
-- Resolve the local verification and Git access issues in an environment with
-  command-level write access before beginning EPUB Inspector work.
+
+## Scope for Phase 1
+
+- Inspect an EPUB ZIP container and its OPF package document without extracting
+  publication content or converting it.
+- Return the package path, available title/language/identifier/creator metadata,
+  manifest entries, and spine order as package-specific structured data.
+- Classify invalid archives, missing or malformed container/package documents,
+  invalid package references, and missing manifest targets.
+- Keep EPUB parsing and ZIP/XML details inside `packages/epub`; do not add
+  EPUB-specific fields to Core contracts.
+- Reject unsafe archive paths and package references that escape the archive.
+  Do not resolve DTDs or external entities or make network requests.
+- Apply configurable archive byte, entry count, and metadata document limits.
+- No PDF generation, Vivliostyle integration, PDF quality gate, CLI workflow,
+  or GUI implementation.
+
+## PDF output naming requirement (planned for Phase 2)
+
+The default PDF filename will preserve the source filename stem and append the
+conversion time in `YYYYMMDD-HHmmss` form:
+
+```text
+book.epub                 -> book_20260926-064530.pdf
+吾輩は猫である.epub       -> 吾輩は猫である_20260926-064530.pdf
+```
+
+Do not use default auto-numbering such as `output.pdf`, `output1.pdf`, and
+`output2.pdf`. If the same source produces a filename collision within the same
+second, an implementation may append `-001`, `-002`, and so on. The eventual
+filename helper should accept the conversion time as an argument (for example,
+`createOutputFileName(sourceName, convertedAt)`) so tests can control time.
+This is a Phase 2 requirement only; Phase 1 does not implement filename logic.
 
 ## Quality attributes
 

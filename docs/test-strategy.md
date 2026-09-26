@@ -1,14 +1,13 @@
 # Test strategy
 
 Testing uses the JSTQB Foundation Level vocabulary as a practical guide for
-test analysis, design, and execution. Test depth will grow with the product;
-this foundation phase has only contract smoke tests.
+test analysis, design, and execution. Phase 1 tests exercise actual ZIP/XML
+parsing with small archives generated in code. Conversion and PDF quality
+checks remain planned until those components exist.
 
 ## Test design and feedback loop
 
-The following is the planned test process. Current contract smoke tests
-exercise the shared types and do not yet apply the listed input-design
-techniques.
+The following process applies to the Inspector tests and later phases.
 
 ```mermaid
 flowchart LR
@@ -43,36 +42,35 @@ flowchart LR
 
 ## Test conditions
 
-Test conditions are observable behaviors derived from that basis. Initial
-conditions include whether a source is a supported EPUB, whether it has a
-usable reading order, whether referenced resources are available, whether PDF
-output is structurally valid, and whether rendered pages meet stable quality
-expectations.
+Inspector conditions include whether an archive is readable and within limits,
+whether its container and package documents are present and well formed,
+whether paths remain inside the archive, whether manifest targets exist, and
+whether spine references identify manifest entries. PDF and rendered-page
+conditions remain future work.
 
 ## Test levels
 
-- **Unit test:** fast checks for pure parsing, normalization, layout options,
-  and validation rules. The foundation currently checks contract values and
-  structural implementations.
-- **Integration test:** verify boundaries between EPUB parsing, normalized
-  publication data, renderer output, and PDF validation. Store licensed,
-  minimal fixtures in `tests/fixtures` and record their provenance.
+- **Unit test:** contract checks and pure path/metadata behavior.
+- **Inspector integration test:** generated minimal ZIP archives exercise the
+  public inspector behavior across ZIP reading, XML parsing, and package
+  validation. These tests live in `tests/unit` and do not retain binary
+  fixtures.
+- **Conversion integration test:** verify boundaries between normalized
+  publication, renderer output, and PDF validation once those components exist.
+  Store licensed minimal fixtures in `tests/fixtures` and record provenance.
 - **E2E test:** exercise user-visible CLI or GUI flows. Playwright is
   configured for future GUI projects; no dummy UI is included and these tests
   are not required in CI yet.
 
 ## Test design techniques
 
-These techniques are part of the planned test design. The current contract
-smoke tests do not use them; apply them when the EPUB Inspector and conversion
-behavior provide testable conditions.
-
-| Technique                | Planned use                                                                                                                  | Status                   |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| Equivalence Partitioning | Select representative supported EPUB 3 reflowable, EPUB 3 fixed-layout, EPUB 2, malformed, incomplete, and protected inputs. | Planned; not yet applied |
-| Boundary Value Analysis  | Check zero/one spine entries, empty/minimal metadata, resource reference boundaries, and specified size limits.              | Planned; not yet applied |
-| Decision Table Testing   | Combine container, OPF, spine, resource, and encryption conditions to define accept/reject results.                          | Planned; not yet applied |
-| State Transition Testing | Exercise selected, inspected, normalized, rendered, validated, completed, and failed conversion states.                      | Planned; not yet applied |
+| Technique                | Applied use                                                                                                     | Status                    |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| Equivalence Partitioning | Valid minimal EPUB, broken ZIP, missing container/package, malformed XML, and present/missing manifest targets. | Applied to Inspector      |
+| Boundary Value Analysis  | Configured archive byte/count/XML limits, absent optional metadata, and zero/one spine entries.                 | Applied to Inspector      |
+| Decision Table Testing   | Archive → container → package → manifest target conditions determine the result or error classification.        | Applied across test cases |
+| Error guessing           | DTD declarations, unsafe ZIP entries, and package/manifest paths escaping the archive.                          | Applied to Inspector      |
+| State Transition Testing | Selected, inspected, normalized, rendered, validated, completed, and failed conversion states.                  | Planned for conversion    |
 
 - **Visual regression testing:** compare representative rendered page images
   to reviewed baselines after renderer and font changes. Baseline updates need
@@ -82,25 +80,29 @@ behavior provide testable conditions.
   brittle byte-for-byte PDF comparisons when timestamps or object ordering
   vary; normalize or compare content and page properties instead.
 
-## Initial EPUB test classes
+## EPUB Inspector test classes
 
-| Class   | Inputs                          | Expected direction                                                   |
-| ------- | ------------------------------- | -------------------------------------------------------------------- |
-| Valid   | EPUB 3 Reflowable               | Accept and preserve spine order                                      |
-| Valid   | EPUB 3 Fixed Layout             | Accept and retain fixed-layout metadata                              |
-| Valid   | EPUB 2                          | Accept as supported legacy input and record any conversion limits    |
-| Invalid | ZIP that is not an EPUB         | Reject as unsupported input                                          |
-| Invalid | Corrupted ZIP                   | Reject with a useful archive error                                   |
-| Invalid | Missing `container.xml`         | Reject as an incomplete EPUB container                               |
-| Invalid | Missing OPF package document    | Reject as an incomplete publication                                  |
-| Invalid | Missing spine                   | Reject because reading order is unavailable                          |
-| Invalid | Missing referenced resource     | Reject and identify the missing item                                 |
-| Invalid | Encrypted or DRM-protected EPUB | Reject or report unsupported protection; DRM removal is out of scope |
+| Class   | Inputs                                                         | Expected direction                                                   |
+| ------- | -------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Valid   | Minimal EPUB ZIP with OPF metadata, manifest, and spine        | Return package path and preserve metadata, manifest, and spine order |
+| Valid   | Optional metadata elements absent                              | Keep absent scalar values undefined and return an empty creator list |
+| Invalid | Non-ZIP or malformed ZIP                                       | `INVALID_EPUB_ARCHIVE`                                               |
+| Invalid | Missing `META-INF/container.xml`                               | `CONTAINER_XML_NOT_FOUND`                                            |
+| Invalid | Malformed or unsafe `container.xml`                            | `INVALID_CONTAINER_XML`                                              |
+| Invalid | Missing referenced OPF package document                        | `PACKAGE_DOCUMENT_NOT_FOUND`                                         |
+| Invalid | Malformed or structurally incomplete OPF                       | `INVALID_PACKAGE_DOCUMENT`                                           |
+| Invalid | Manifest resource absent from the ZIP                          | `MANIFEST_REFERENCE_NOT_FOUND`                                       |
+| Invalid | ZIP entry or package reference escapes archive root            | Reject with archive/container/package error classification           |
+| Invalid | Archive, entry count, or metadata XML exceeds configured limit | Reject before retaining oversized content                            |
+
+The Inspector reports EPUB structure only. EPUB version compatibility,
+renderability, DRM detection, and conversion acceptance are outside this
+phase; DRM removal remains out of scope.
 
 ## Regression and execution
 
 Pull requests and pushes to `main` run lint, typecheck, unit tests, and build.
-Integration tests will join CI when the adapter and renderer exist. Visual
-regression and golden master checks begin only when stable rendered fixtures
-and reviewable baselines are available. Playwright E2E remains optional until
-there is a real CLI or GUI flow to exercise.
+Inspector tests run with the unit suite. Visual regression and golden master
+checks begin only when stable rendered fixtures and reviewable baselines are
+available. Playwright E2E remains optional until there is a real CLI or GUI
+flow to exercise.
