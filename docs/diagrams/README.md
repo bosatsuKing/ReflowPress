@@ -4,7 +4,7 @@ The diagrams use GitHub-flavored Mermaid and live beside the documentation
 that explains them. README includes a compact architecture graph and the
 development loop. The full diagrams are:
 
-- [Architecture and package dependency graphs](../architecture.md#planned-publication-pipeline)
+- [Architecture and package dependency graphs](../architecture.md#epub-inspection-and-planned-publication-pipeline)
 - [Conversion pipeline](../architecture.md#conversion-pipeline)
 - [Planned PDF quality loop](../architecture.md#pdf-quality-loop)
 - [Test design and feedback loop](../test-strategy.md#test-design-and-feedback-loop)

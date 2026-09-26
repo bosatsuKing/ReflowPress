@@ -1,6 +1,6 @@
 # Architecture
 
-## Planned publication pipeline
+## EPUB inspection and planned publication pipeline
 
 The graph describes the intended conversion boundary. Existing TypeScript
 contracts are labeled separately from implementations that are still
@@ -9,6 +9,8 @@ planned.
 ```mermaid
 flowchart TD
     INPUT[Source publication]
+    INSPECTOR[EPUB Inspector<br/>implemented]
+    INSPECTION[EpubInspection<br/>implemented result]
     EPUB[EpubPublicationAdapter<br/>contract only]
     FUTURE[Future adapters<br/>CBZ / FB2 / HTML / Markdown]
     NORMALIZED[NormalizedPublication<br/>type implemented]
@@ -18,9 +20,10 @@ flowchart TD
     VALIDATOR[PdfValidator<br/>contract implemented; rules planned]
     RESULT[Validated PDF<br/>planned]
 
-    INPUT --> EPUB
+    INPUT --> INSPECTOR --> INSPECTION
+    INPUT -. future conversion .-> EPUB
     INPUT -. future .-> FUTURE
-    EPUB --> NORMALIZED
+    EPUB -. future adapter implementation .-> NORMALIZED
     FUTURE -. future .-> NORMALIZED
     NORMALIZED --> RENDERER
     RENDERER -. future implementation .-> VIV
@@ -30,37 +33,58 @@ flowchart TD
 ```
 
 `packages/core` owns the format-neutral model and adapter/renderer contracts.
-It has no UI dependency. `packages/epub` defines an EPUB source and adapter
-contract, but does not inspect archives. `packages/renderer` defines renderer
-contracts, including a type-level Vivliostyle contract, but does not launch
-Vivliostyle. `packages/pdf` re-exports the shared PDF output type. `packages/validation`
-defines the validator contract without inspecting PDF files.
+It has no UI dependency. `packages/epub` inspects ZIP entries, `container.xml`,
+and OPF metadata/manifest/spine and returns the package-specific
+`EpubInspection`; its separate `EpubPublicationAdapter` remains a contract and
+does not yet produce `NormalizedPublication`. `packages/renderer` defines
+renderer contracts, including a type-level Vivliostyle contract, but does not
+launch Vivliostyle. `packages/pdf` re-exports the shared PDF output type.
+`packages/validation` defines the validator contract without inspecting PDF
+files.
 
 ## Package dependency graph
 
-The graph below follows workspace `package.json` dependencies. Arrows point
-from a package to a package it depends on.
+The graph below follows package manifest dependencies. Arrows point from a
+package to a package it depends on; workspace and runtime dependencies are
+shown.
 
 ```mermaid
 flowchart TD
     CLI[apps/cli<br/>directory only; no package manifest]
     CORE[packages/core]
     EPUB[packages/epub]
+    ZIP[Runtime: yauzl]
+    XML[Runtime: @xmldom/xmldom]
     RENDERER[packages/renderer]
     PDF[packages/pdf]
     VALIDATION[packages/validation]
 
     EPUB --> CORE
+    EPUB --> ZIP
+    EPUB --> XML
     RENDERER --> CORE
     PDF --> CORE
     VALIDATION --> CORE
 ```
 
-`pnpm-workspace.yaml` includes `apps/*` and `packages/*`. At this stage,
+`pnpm-workspace.yaml` includes `apps/*` and `packages/*`. External ZIP/XML
+libraries are runtime dependencies of `packages/epub`; they are not workspace
+packages. At this stage,
 `apps/cli` contains documentation only, so it declares no package dependencies
-and has no graph edges. The four package edges above are declared in their
-respective manifests. There are no package dependency cycles. TypeScript
+and has no graph edges. The four workspace dependency edges above are declared
+in their respective manifests. There are no package dependency cycles. TypeScript
 project references also point from each of those packages to `packages/core`.
+
+The Inspector uses [yauzl](https://github.com/thejoshwolfe/yauzl) for
+asynchronous, file-based ZIP central-directory reading with lazy entry handling
+and size validation; it reads only the two metadata documents and does not
+extract entries. It uses [@xmldom/xmldom](https://github.com/xmldom/xmldom)
+for XML parsing, with DTD declarations rejected before parsing. The
+container and OPF documents default to a 4 MiB limit; the archive is limited to
+128 MiB and 20,000 entries. These caps bound DOM memory and metadata parsing
+work. Both are pure JavaScript packages; xmldom has no runtime dependencies,
+and yauzl has one small runtime dependency. `@types/yauzl` is a development-only
+TypeScript declaration dependency.
 
 The runtime dependency direction is therefore adapters and services toward
 Core contracts. A future CLI can depend on these packages after it gains a
@@ -68,8 +92,9 @@ package manifest; it is not represented as an existing dependency today.
 
 ## Conversion pipeline
 
-This is the planned conversion process; no stage currently reads or converts a
-publication.
+The first branch reads EPUB structure and returns inspection data. The separate
+conversion stages remain planned; no stage currently turns publication content
+into normalized markup or PDF.
 
 ```mermaid
 flowchart LR
@@ -142,7 +167,8 @@ when timestamps or object ordering are nondeterministic.
 ## Current boundaries
 
 - Core contracts contain no file, network, renderer, or GUI implementation.
-- The EPUB package describes EPUB input types only; DRM removal is out of
+- The EPUB package inspects archive structure and package metadata only; it
+  does not extract publication content or convert it. DRM removal is out of
   scope.
 - A renderer can be replaced by implementing `Renderer` without changing the
   normalized publication contract.
